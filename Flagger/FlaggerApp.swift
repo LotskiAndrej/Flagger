@@ -9,9 +9,21 @@ import SwiftUI
 
 @main
 struct FlaggerApp: App {
+    @ObservedObject private var viewModel = FlaggerViewModel()
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            Home(viewModel: viewModel)
+                .colorScheme(.light)
+                .onAppear {
+                    Task {
+                        do {
+                            try await viewModel.fetchAllCountries()
+                        } catch {
+                            viewModel.state = .error
+                        }
+                    }
+                }
         }
     }
 }
