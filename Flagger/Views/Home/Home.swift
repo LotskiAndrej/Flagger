@@ -10,18 +10,16 @@ import CoreData
 
 struct Home: View {
     @ObservedObject var viewModel: FlaggerViewModel
-    @ScaledMetric(relativeTo: .body) var baselineOffset = -15
     
     var body: some View {
         ZStack(alignment: .topTrailing) {
             VStack {
                 Text("Flagger")
-                    .font(.custom("Jealousy", size: 50))
+                    .font(.custom("SignPaintohDemo",
+                                  size: viewModel.state != .success || viewModel.activeGameMode != nil ? 50 : 90))
                     .foregroundColor(.white)
-                    .baselineOffset(baselineOffset)
+                    .offset(y: viewModel.state != .success || viewModel.activeGameMode != nil ? 0 : 250)
                     .padding(.top)
-                    .offset(y: viewModel.state != .success || viewModel.activeGameMode != nil ? 0 : 150)
-                    .scaleEffect(viewModel.state != .success || viewModel.activeGameMode != nil ? 1 : 1.5)
                 
                 VStack(spacing: 60) {
                     if viewModel.state == .loading || viewModel.state == .none {
@@ -55,6 +53,7 @@ struct Home: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             .padding(.horizontal)
             .padding(.bottom)
             .background(
@@ -75,16 +74,17 @@ struct Home: View {
                         .fontWeight(.light)
                         .foregroundColor(.white)
                 }
-                .padding([.top, .trailing], -baselineOffset * 2)
+                .padding([.top, .trailing], 24)
             }
         }
     }
     
     private func highScoreView(gameMode: GameMode) -> Text? {
-        let highScore = UserDefaults.standard.integer(forKey: "\(gameMode.rawValue)")
-        if highScore > 0 {
-            return Text("\(gameMode.rawValue): \(highScore)")
-                .font(.title2)
+        let highScore = UserDefaults.standard.integer(forKey: "HIGHSCORE:\(gameMode.rawValue)")
+        let bestTime = UserDefaults.standard.integer(forKey: "BESTTIME:\(gameMode.rawValue)")
+        if highScore > 0, bestTime > 0 {
+            return Text("\(gameMode.rawValue): \(highScore) flags in \(bestTime) seconds")
+                .font(.title3)
                 .foregroundColor(.white)
         } else { return nil }
     }
@@ -101,7 +101,7 @@ struct Home: View {
                 .frame(maxWidth: .infinity)
                 .overlay(
                     RoundedRectangle(cornerRadius: 10)
-                        .stroke(.white, lineWidth: 2)
+                        .stroke(.white, lineWidth: 1)
                 )
         }
         .foregroundColor(.white)

@@ -22,6 +22,7 @@ class FlaggerViewModel: ObservableObject {
     @Published var state: FlaggerViewModelState = .none
     @Published var activeGameMode: GameMode?
     @Published var highScores = [GameMode: Int]()
+    @Published var bestTimes = [GameMode: Int]()
     private let flagService = FlagService()
     
     @MainActor
