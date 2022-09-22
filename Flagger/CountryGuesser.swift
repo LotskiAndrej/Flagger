@@ -59,7 +59,7 @@ struct CountryGuesser: View {
     
     private var flagView: some View {
         AsyncImage(url: FlaggerViewModel
-            .createFlagURL(with: countryGuessModels[guessingIndex].countryToGuess.alpha2Code)) { image in
+            .createFlagURL(with: countryGuessModels[guessingIndex].countryToGuess.cca2)) { image in
                 if currentImage != nil {
                     currentImage!
                         .resizable()
@@ -116,7 +116,7 @@ struct CountryGuesser: View {
     
     private func prefetchTask() async {
         if guessingIndex + 1 < countries.count {
-            let code = countryGuessModels[guessingIndex + 1].countryToGuess.alpha2Code
+            let code = countryGuessModels[guessingIndex + 1].countryToGuess.cca2
             nextImage = await FlaggerViewModel.prefetchNextImage(alpha2Code: code)
         }
     }
@@ -144,8 +144,8 @@ struct CountryGuesser: View {
                         .foregroundColor(.white)
                 }
                 
-                if !countryGuessModels.isEmpty {
-                    Text(possibleAnswer.name)
+                if !countryGuessModels.isEmpty, let name = possibleAnswer.name.common {
+                    Text(name)
                         .font(.title2)
                         .multilineTextAlignment(.center)
                         .minimumScaleFactor(0.5)

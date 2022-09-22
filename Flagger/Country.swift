@@ -8,14 +8,18 @@
 import Foundation
 
 struct Country: Decodable {
-    let name: String
-    let alpha2Code: String
-    let capital: String?
+    let name: Name
+    let cca2: String
+    let capital: [String]?
     let population: Int64
+    
+    struct Name: Decodable {
+        let common: String
+    }
 }
 
 extension Country: Identifiable {
-    var id: String { alpha2Code }
+    var id: String { cca2 }
 }
 
 struct CountryGuessModel {

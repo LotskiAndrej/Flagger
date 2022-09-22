@@ -55,7 +55,9 @@ class FlaggerViewModel: ObservableObject {
         case .easy:
             return Array(countries.filter { $0.population > 15000000 }.shuffled().prefix(20))
         case .medium:
-            return Array(countries.filter { $0.population > 1000000 && $0.population <= 15000000 }.shuffled().prefix(20))
+            return Array(countries.filter { $0.population > 1000000 && $0.population <= 15000000 }
+                .shuffled()
+                .prefix(20))
         case .hard:
             return Array(countries.filter { $0.population <= 1000000 }.shuffled().prefix(20))
         }
@@ -67,7 +69,8 @@ class FlaggerViewModel: ObservableObject {
         return answers.shuffled()
     }
     
-    class func createFlagURL(with alpha2Code: String) -> URL? {
+    class func createFlagURL(with alpha2Code: String?) -> URL? {
+        guard let alpha2Code = alpha2Code else { return nil }
         let endpoint = "https://flagcdn.com/h240/\(alpha2Code.lowercased()).jpg"
         return URL(string: endpoint)
     }
