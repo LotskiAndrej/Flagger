@@ -81,9 +81,10 @@ struct Home: View {
     
     private func highScoreView(gameMode: GameMode) -> Text? {
         let highScore = UserDefaults.standard.integer(forKey: "HIGHSCORE:\(gameMode.rawValue)")
-        let bestTime = UserDefaults.standard.integer(forKey: "BESTTIME:\(gameMode.rawValue)")
+        let bestTime = UserDefaults.standard.double(forKey: "BESTTIME:\(gameMode.rawValue)")
+        
         if highScore > 0, bestTime > 0 {
-            return Text("\(gameMode.rawValue): \(highScore) flags in \(bestTime) seconds")
+            return Text("\(gameMode.rawValue): \(highScore) flags in \(bestTime, specifier: "%.2f") seconds")
                 .font(.title3)
                 .foregroundColor(.white)
         } else { return nil }

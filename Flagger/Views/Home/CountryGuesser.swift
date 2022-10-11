@@ -10,19 +10,18 @@ import SwiftUI
 struct CountryGuesser: View {
     @ObservedObject var viewModel: FlaggerViewModel
     let gameMode: GameMode
-    private var timeForGame = 0
+    private var timeForGame: Double = 0
     @State private var countries = [Country]()
     @State private var countryGuessModels = [CountryGuessModel]()
     @State private var selectedAnswer: Country?
     @State private var guessingIndex = 0
     @State private var highScore = 0
-    @State private var scale = 1.0
     @State private var resetFlag = false
     @State private var currentImage: Image?
     @State private var nextImage: Image?
-    @State private var timeRemaining: Int
-    @State private var timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-    @State private var totalTime = 0
+    @State private var timeRemaining: Double
+    @State private var timer = Timer.publish(every: 0.01, on: .main, in: .common).autoconnect()
+    @State private var totalTime: Double = 0
     
     init(viewModel: FlaggerViewModel, gameMode: GameMode) {
         self.viewModel = viewModel
@@ -72,12 +71,12 @@ struct CountryGuesser: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Flag: \(guessingIndex + 1) / \(countryGuessModels.count)")
             Text("Score: \(highScore)")
-            Text("Time remaining: \(timeRemaining)s")
+            Text("Time remaining: \(timeRemaining, specifier: "%.2f")s")
                 .onReceive(timer) { _ in
-                    if timeRemaining > 0 {
-                        timeRemaining -= 1
+                    if timeRemaining - 0.01 > 0 {
+                        timeRemaining -= 0.01
                         
-                    } else if timeRemaining == 0 {
+                    } else {
                         goToNextFlag(answer: nil)
                     }
                 }
@@ -112,13 +111,11 @@ struct CountryGuesser: View {
                 
                 EmptyView()
                     .onChange(of: guessingIndex) { _ in
-                        withAnimation(.linear(duration: 0.08)) {
-                            if nextImage != nil {
-                                currentImage = nextImage
-                            } else {
-                                resetFlag = true
-                                currentImage = nil
-                            }
+                        if nextImage != nil {
+                            currentImage = nextImage
+                        } else {
+                            resetFlag = true
+                            currentImage = nil
                         }
                     }
                 
@@ -163,59 +160,67 @@ struct CountryGuesser: View {
         selectedAnswer!.id != correctAnswer.id
         
         return ZStack {
-                if answeredCorrectly {
-                    RoundedRectangle(cornerRadius: 10)
-                        .foregroundColor(.green)
-                        .scaleEffect(selectedAnswer!.id == possibleAnswer.id ? scale : 1.0)
-                } else if answeredWrong {
-                    RoundedRectangle(cornerRadius: 10)
-                        .foregroundColor(.red)
-                        .scaleEffect(selectedAnswer!.id == possibleAnswer.id ? scale : 1.0)
-                } else {
-                    RoundedRectangle(cornerRadius: 10)
-                        .foregroundColor(.white)
-                }
-                
-                if !countryGuessModels.isEmpty, let name = possibleAnswer.name.common {
-                    Text(name)
-                        .font(.title2)
-                        .multilineTextAlignment(.center)
-                        .minimumScaleFactor(0.5)
-                        .foregroundColor(answeredCorrectly || answeredWrong ? .white : .black)
-                        .padding(8)
-                }
+            if answeredCorrectly {
+                RoundedRectangle(cornerRadius: 10)
+                    .foregroundColor(.green)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(.green.opacity(0.5), lineWidth: selectedAnswer!.id == possibleAnswer.id ? 15 : 0)
+                    }
+            } else if answeredWrong {
+                RoundedRectangle(cornerRadius: 10)
+                    .foregroundColor(.red)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(.red.opacity(0.5), lineWidth: selectedAnswer!.id == possibleAnswer.id ? 15 : 0)
+                    }
+            } else {
+                RoundedRectangle(cornerRadius: 10)
+                    .foregroundColor(.white)
+                    .opacity(selectedAnswer != nil ? 0.3 : 1)
             }
-            .frame(height: 100)
-            .onTapGesture { tapped(answer: possibleAnswer) }
+            
+            if !countryGuessModels.isEmpty, let name = possibleAnswer.name.common {
+                Text(name)
+                    .font(.title2)
+                    .multilineTextAlignment(.center)
+                    .minimumScaleFactor(0.5)
+                    .foregroundColor(answeredCorrectly || answeredWrong ? .white : .black)
+                    .padding(8)
+                    .opacity(!(!answeredCorrectly && !answeredWrong) || selectedAnswer == nil ? 1 : 0.3)
+            }
+        }
+        .frame(height: 92)
+        .padding(4)
+        .onTapGesture { tapped(answer: possibleAnswer) }
     }
     
     private func tapped(answer: Country) {
         if selectedAnswer == nil {
             timer.upstream.connect().cancel()
+            selectedAnswer = answer
             
-            withAnimation(.linear(duration: 0.08)) {
-                selectedAnswer = answer
-                scale = 0.95
-            }
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
                 goToNextFlag(answer: answer)
             }
         }
     }
     
     private func goToNextFlag(answer: Country?) {
-        withAnimation(.linear(duration: 0.1)) {
-            selectedAnswer = nil
-            scale = 1.0
-        }
+        selectedAnswer = nil
+        totalTime += timeForGame - timeRemaining
+        timeRemaining = timeForGame
         
         if let answer = answer, countryGuessModels[guessingIndex].countryToGuess.id == answer.id {
             highScore += 1
         }
         
+        timer.upstream.connect().cancel()
+        
         if guessingIndex + 1 < countries.count {
             guessingIndex += 1
+            timer = timer.upstream.autoconnect()
+            
         } else {
             guessingIndex = 0
             
@@ -224,7 +229,7 @@ struct CountryGuesser: View {
                 UserDefaults.standard.set(highScore, forKey: "HIGHSCORE:\(gameMode.rawValue)")
             }
             
-            if totalTime > viewModel.bestTimes[gameMode] ?? 0 {
+            if viewModel.bestTimes[gameMode] == nil || totalTime < viewModel.bestTimes[gameMode] ?? 0 {
                 viewModel.bestTimes[gameMode] = totalTime
                 UserDefaults.standard.set(totalTime, forKey: "BESTTIME:\(gameMode.rawValue)")
             }
@@ -233,11 +238,6 @@ struct CountryGuesser: View {
                 viewModel.activeGameMode = nil
             }
         }
-        
-        totalTime += timeForGame - timeRemaining
-        timeRemaining = timeForGame
-        timer.upstream.connect().cancel()
-        timer = timer.upstream.autoconnect()
     }
 }
 
