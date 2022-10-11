@@ -14,7 +14,7 @@ struct CountryGuesser: View {
     @State private var countries = [Country]()
     @State private var countryGuessModels = [CountryGuessModel]()
     @State private var selectedAnswer: Country?
-    @State private var guessingIndex = 0
+    @State private var guessingIndex = -1
     @State private var highScore = 0
     @State private var resetFlag = false
     @State private var currentImage: Image?
@@ -22,6 +22,8 @@ struct CountryGuesser: View {
     @State private var timeRemaining: Double
     @State private var timer = Timer.publish(every: 0.01, on: .main, in: .common).autoconnect()
     @State private var totalTime: Double = 0
+    @State private var shouldStartGame = false
+    @State private var firstFetchComplete = false
     
     init(viewModel: FlaggerViewModel, gameMode: GameMode) {
         self.viewModel = viewModel
@@ -40,23 +42,54 @@ struct CountryGuesser: View {
     }
     
     var body: some View {
-        VStack {
-            if !countryGuessModels.isEmpty {
-                Spacer()
+        ZStack {
+            if !shouldStartGame {
+                VStack {
+                    
+                    if firstFetchComplete {
+                        Button {
+                            shouldStartGame = true
+                        } label: {
+                            Text("Start")
+                                .foregroundColor(.white)
+                                .font(.title2)
+                                .padding()
+                                .frame(maxWidth: .infinity)
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(.white, lineWidth: 1)
+                                }
+                        }
+                        .padding(.bottom)
+                        
+                    } else {
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                            .tint(.white)
+                    }
+                }
                 
-                informationView
-                
-                Spacer()
-                
-                flagView
-                
-                Spacer()
-                
-                answersView
             } else {
-                ProgressView()
-                    .progressViewStyle(.circular)
-                    .tint(.white)
+                VStack {
+                    if !countryGuessModels.isEmpty {
+                        Spacer()
+                        
+                        informationView
+                        
+                        Spacer()
+                        
+                        flagView
+                        
+                        Spacer()
+                        
+                        answersView
+                    } else {
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                            .tint(.white)
+                    }
+                }
+                .background(.clear)
             }
         }
         .background(.clear)
@@ -64,6 +97,13 @@ struct CountryGuesser: View {
             let (countries, countryGuessModels) = viewModel.createCountryGuessModels(for: gameMode)
             self.countries = countries
             self.countryGuessModels = countryGuessModels
+            
+            Task {
+                await prefetchTask()
+                currentImage = nextImage
+                guessingIndex = 0
+                firstFetchComplete = true
+            }
         }
     }
     
@@ -97,14 +137,6 @@ struct CountryGuesser: View {
                             Task { await prefetchTask() }
                         }
                         .onChange(of: currentImage) { _ in
-                            Task { await prefetchTask() }
-                        }
-                } else {
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .shadow(color: .black.opacity(0.5), radius: 20)
-                        .onAppear {
                             Task { await prefetchTask() }
                         }
                 }
