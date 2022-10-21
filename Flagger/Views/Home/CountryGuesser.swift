@@ -14,13 +14,13 @@ struct CountryGuesser: View {
     @State private var countries = [Country]()
     @State private var countryGuessModels = [CountryGuessModel]()
     @State private var selectedAnswer: Country?
-    @State private var guessingIndex = -1
+    @State private var guessingIndex = 0
     @State private var highScore = 0
     @State private var resetFlag = false
     @State private var currentImage: Image?
     @State private var nextImage: Image?
     @State private var timeRemaining: Double
-    @State private var timer = Timer.publish(every: 0.01, on: .main, in: .common).autoconnect()
+    @State private var timer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
     @State private var totalTime: Double = 0
     @State private var shouldStartGame = false
     @State private var firstFetchComplete = false
@@ -99,9 +99,8 @@ struct CountryGuesser: View {
             self.countryGuessModels = countryGuessModels
             
             Task {
-                await prefetchTask()
+                await prefetchFirstTask()
                 currentImage = nextImage
-                guessingIndex = 0
                 firstFetchComplete = true
             }
         }
@@ -111,10 +110,10 @@ struct CountryGuesser: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Flag: \(guessingIndex + 1) / \(countryGuessModels.count)")
             Text("Score: \(highScore)")
-            Text("Time remaining: \(timeRemaining, specifier: "%.2f")s")
+            Text("Time remaining: \(timeRemaining, specifier: "%.1f")s")
                 .onReceive(timer) { _ in
-                    if timeRemaining - 0.01 > 0 {
-                        timeRemaining -= 0.01
+                    if timeRemaining - 0.1 > 0 {
+                        timeRemaining -= 0.1
                         
                     } else {
                         goToNextFlag(answer: nil)
@@ -182,6 +181,11 @@ struct CountryGuesser: View {
         }
     }
     
+    private func prefetchFirstTask() async {
+        let code = countryGuessModels[guessingIndex].countryToGuess.cca2
+        nextImage = await FlaggerViewModel.prefetchNextImage(alpha2Code: code)
+    }
+    
     private func answerButtonView(index: Int) -> some View {
         let correctAnswer = countryGuessModels[guessingIndex].countryToGuess
         let possibleAnswer = countryGuessModels[guessingIndex].possibleAnswers[index]
@@ -247,8 +251,6 @@ struct CountryGuesser: View {
             highScore += 1
         }
         
-        timer.upstream.connect().cancel()
-        
         if guessingIndex + 1 < countries.count {
             guessingIndex += 1
             timer = timer.upstream.autoconnect()
@@ -266,9 +268,7 @@ struct CountryGuesser: View {
                 UserDefaults.standard.set(totalTime, forKey: "BESTTIME:\(gameMode.rawValue)")
             }
             
-            withAnimation(.linear(duration: 0.5)) {
-                viewModel.activeGameMode = nil
-            }
+            viewModel.activeGameMode = nil
         }
     }
 }

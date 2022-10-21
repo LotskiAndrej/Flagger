@@ -37,7 +37,7 @@ struct Home: View {
                     } else {
                         Spacer()
                         
-                        VStack {
+                        VStack(spacing: 4) {
                             highScoreView(gameMode: .easy)
                             highScoreView(gameMode: .medium)
                             highScoreView(gameMode: .hard)
@@ -79,15 +79,23 @@ struct Home: View {
         }
     }
     
-    private func highScoreView(gameMode: GameMode) -> Text? {
+    private func highScoreView(gameMode: GameMode) -> some View {
         let highScore = UserDefaults.standard.integer(forKey: "HIGHSCORE:\(gameMode.rawValue)")
         let bestTime = UserDefaults.standard.double(forKey: "BESTTIME:\(gameMode.rawValue)")
         
-        if highScore > 0, bestTime > 0 {
-            return Text("\(gameMode.rawValue): \(highScore) flags in \(bestTime, specifier: "%.2f") seconds")
-                .font(.title3)
-                .foregroundColor(.white)
-        } else { return nil }
+        return HStack {
+            if highScore > 0, bestTime > 0 {
+                Text("\(gameMode.rawValue): ")
+                
+                Spacer()
+                
+                Text("\(highScore) \(highScore == 1 ? "flag" : "flags") in \(bestTime, specifier: "%.1f")s")
+            } else {
+                EmptyView()
+            }
+        }
+        .font(.body)
+        .foregroundColor(.white)
     }
     
     private func buttonView(for gameMode: GameMode) -> some View {
