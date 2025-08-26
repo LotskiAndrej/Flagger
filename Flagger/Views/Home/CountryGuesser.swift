@@ -216,7 +216,9 @@ struct CountryGuesser: View {
                     .opacity(selectedAnswer != nil ? 0.3 : 1)
             }
             
-            if !countryGuessModels.isEmpty, let name = possibleAnswer.name.common {
+            if !countryGuessModels.isEmpty {
+                let name = possibleAnswer.name.common
+
                 Text(name)
                     .font(.title2)
                     .multilineTextAlignment(.center)
