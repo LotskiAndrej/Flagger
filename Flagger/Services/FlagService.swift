@@ -16,7 +16,7 @@ class FlagService {
     }()
     
     func fetchCountries() async throws -> [Country] {
-        let endpoint = "https://restcountries.com/v3.1/all"
+        let endpoint = "https://restcountries.com/v3.1/independent?status=true"
         
         guard let url = URL(string: endpoint) else {
             throw Errors.fetchCountriesURL
